@@ -18,6 +18,7 @@ install:
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip mock h5py lxml nose numpy scipy scikit-image matplotlib pandas
   - source activate test-environment
+  - conda install -c conda-forge librosa
   - pip install python-coveralls
   - pip install git+git://github.com/casimp/bat_tools
 
