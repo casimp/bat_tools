@@ -7,6 +7,7 @@ Created on Fri Oct 18 13:26:51 2019
 import matplotlib.pyplot as plt
 from bat_tools.split_wav import load_split_wav
 import os
+import numpy as np
 
 class PulseMark():
     
@@ -41,7 +42,7 @@ class PulseMark():
             print(f'These files(s) will be re-analysed - set overwrite=False to skip these files.')      
             
         
-    def interact(self, n_fft=1024, ylim=(10, 150), save=True):
+    def interact(self, n_fft=1024, ylim=(10, 150), save=True, cmap='viridis'):
         """
         n_fft should be related to the width of the bat call. In this 
         case the bat call duration is approx. 50ms (PIPI). So, to ensure 
@@ -49,8 +50,8 @@ class PulseMark():
         fft_window 50ms/25 = 2ms window. 2ms * 500000 = nfft = 1000. We 
         will use 1024 as this is more easily & repeatedly divisable by 2.
         """
-        self.ylim=ylim
-        cmap='viridis'
+        self.ylim=[i * 1000 for i in ylim]
+        cmap=cmap
         
         def complex_click(event):
             """
@@ -88,13 +89,13 @@ class PulseMark():
                 self.data[self.files[self.curr_file]].pop(self.curr_pos, None) 
             elif e.key == 'escape':
                 self.curr_bool = False
-                self.curr_pos = len(split)
+                self.curr_pos = len(self.split)
                 self.data.setdefault(self.files[self.curr_file], {})
                 self.data[self.files[self.curr_file]] = {0:[False,]}
             else:
                 return
             
-            if self.curr_pos == len(split) and self.curr_file == len(files) - 1:
+            if self.curr_pos == len(self.split) and self.curr_file == len(files) - 1:
                 self.curr_pos -=1
                 self.d = {k: sum(self.data[k].values(), []) for k in self.data.keys()}
 
@@ -103,24 +104,28 @@ class PulseMark():
                 fig.canvas.draw()
 
             else:
-                if self.curr_pos == len(split):
+                if self.curr_pos == len(self.split):
                     self.curr_file += 1
                     # print(self.data)
                     self.curr_pos = 0
                     self.curr_bool = True
-                    rate, split, t, freq = load_split_wav(files[curr_file], n_fft=n_fft)
-                    self.n_split = len(split)
+                    rate, self.split, self.t, freq = load_split_wav(files[self.curr_file], n_fft=n_fft)
+                    self.n_split = len(self.split)
 
                 ax.cla()
-                ax.pcolorfast([t[self.curr_pos][0], t[self.curr_pos][-1]], 
-                              [freq[0], freq[-1]], split[self.curr_pos], cmap=cmap)
+                ax.pcolorfast([self.t[self.curr_pos][0], self.t[self.curr_pos][-1]], 
+                              [freq[0], freq[-1]], self.split[self.curr_pos], cmap=cmap)
+                ax.set_yticks(self.ytick_loc)
+                ax.set_yticklabels(self.yticks / 1000)
                 plt.title(files[self.curr_file])
                 ax.set_ylabel('kHz')
                 ax.set_ylim(*self.ylim)
                 ax.set_xlabel('time (s)')
-                ax.text(0.9, 0.9,'{}/{}'.format(self.curr_pos+1, len(split)), 
+                ax.text(0.9, 0.9,'{}/{}'.format(self.curr_pos+1, len(self.split)), 
                         ha='center', va='center', transform=ax.transAxes,
                         bbox=dict(boxstyle='round', fc='w'))
+                ax.set_ylim(*np.interp(self.ylim, freq, self.fz))
+                ax.grid()
                 fig.canvas.draw()
                 
         def handle_close(evt):
@@ -135,25 +140,34 @@ class PulseMark():
 
             
         # Now all the event handlers are ready, lets fire up some data
-        rate, split, t, freq = load_split_wav(self.files[0], n_fft=n_fft, hop_length=None)
-        self.n_split = len(split)
+        print(f'Example file: {self.files[0]}')
+        rate, self.split, self.t, freq = load_split_wav(self.files[0], n_fft=n_fft, hop_length=None)
+        self.n_split = len(self.split)
         self.curr_bool = True
         fig, ax = plt.subplots()
         plt.title(self.files[0])
         
-        ke = lambda x, args=[split, rate, t, freq, cmap, n_fft, self.files]: complex_key(x, *args)
+        ke = lambda x, args=[self.split, rate, self.t, freq, cmap, n_fft, self.files]: complex_key(x, *args)
         fig.canvas.mpl_connect('button_press_event', complex_click)
         fig.canvas.mpl_connect('key_press_event', ke)
         fig.canvas.mpl_connect('close_event', handle_close)
-
-        ax.pcolorfast([t[0][0], t[0][-1]], [freq[0], freq[-1]], split[0], cmap=cmap) 
-        ax.text(0.9, 0.9,'{}/{}'.format(self.curr_pos+1, len(split)), ha='center',
+        
+        ax.pcolorfast([self.t[0][0], self.t[0][-1]], [freq[0], freq[-1]], self.split[0], cmap=cmap) 
+        ax.text(0.9, 0.9,'{}/{}'.format(self.curr_pos+1, len(self.split)), ha='center',
                 va='center', transform=ax.transAxes,
                 bbox=dict(boxstyle='round', fc='w'),horizontalalignment='center',
                 verticalalignment='center',)
+        
+        self.yticks=np.linspace(10000, 150000, 15)
+        self.fz = np.linspace(freq[0], freq[-1], freq.size)
+        self.ytick_loc = np.interp(self.yticks, freq, self.fz)
+        
+        ax.set_yticks(self.ytick_loc)
+        ax.set_yticklabels(self.yticks / 1000)
         ax.set_ylabel('kHz')
         ax.set_xlabel('time (s)')
-        ax.set_ylim(*self.ylim)
+        ax.set_ylim(*np.interp(self.ylim, freq, self.fz))
+        ax.grid()
 
         plt.show()
         
