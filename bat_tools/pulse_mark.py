@@ -5,7 +5,7 @@ Created on Fri Oct 18 13:26:51 2019
 @author: casim
 """
 import matplotlib.pyplot as plt
-from bat_tools.split_wav import load_split_wav
+from bat_tools.split_wav import split_wav
 import os
 import numpy as np
 
@@ -109,7 +109,7 @@ class PulseMark():
                     # print(self.data)
                     self.curr_pos = 0
                     self.curr_bool = True
-                    rate, self.split, self.t, freq = load_split_wav(files[self.curr_file], n_fft=n_fft)
+                    self.split, self.t, freq = split_wav(files[self.curr_file], n_fft=n_fft)
                     self.n_split = len(self.split)
 
                 ax.cla()

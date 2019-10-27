@@ -12,8 +12,58 @@ import itertools
 species_list = ['PIPI', 'NYNO', 'MYO', 'RHHI', 'EPSE', 'PYPI', 'BABA', 'PLAU',
                 'NYLE', 'RHFE', 'PINA'] ## add the rest
 
+def logmel_wav(f, n_fft=2048, n_mels=256, hop_length=None, 
+              fmin=10000, fmax=150000):
+    """
+    Loads wav file, converts to mel spectogram that has been split into short 
+    (0.5s) sections for the purpose of markinng the pulse locations.
+    
+    Parameters
+    ----------
+    f: str
+        The path to the wav file
+    n_fft: int
+        Length of FFT window
+    n_mels: int
+        Number of bins for the frequency data (using a mel filter bank 
+        construction)
+    hop_length: int/None
+        Number of samples between successive frames.
+    fmin: int
+        Minimum frequency for mel bins
+    fmax: int
+        Maximum frequency for mel bins
+    
 
-def load_split_wav(f, n_fft=2048, n_mels=256, hop_length=None, fmin=10000, fmax=150000):
+    Returns
+    -------
+    rate: int
+        Sampling rate
+    split: array
+        Array containing all n logmel spectograms for all pulses in specified 
+        file, of size (n , window, n_mels)
+    t: array
+        Time vector across each windows for each split
+    freq: array
+        Frequencies associated with the n_mel frequency bands
+
+    """
+    (sig, rate) = librosa.load(f, sr=None)
+    melspec = librosa.feature.melspectrogram(sig, n_fft=2048, n_mels=n_mels, 
+                                             hop_length=hop_length, fmin=fmin, 
+                                             fmax=fmax, sr=rate)
+    logmel = librosa.core.power_to_db(melspec)
+    
+    f = librosa.core.mel_frequencies(n_mels=n_mels, fmin=fmin, fmax=fmax)
+    
+    t_total = sig.size/rate
+    t = np.linspace(0, t_total, logmel.shape[1])
+    
+    return logmel, t, f
+    
+
+def split_wav(f, n_fft=2048, n_mels=256, hop_length=None, 
+              fmin=10000, fmax=150000):
     """
     Loads wav file, converts to mel spectogram that has been split into short 
     (0.5s) sections for the purpose of markinng the pulse locations.
@@ -49,23 +99,12 @@ def load_split_wav(f, n_fft=2048, n_mels=256, hop_length=None, fmin=10000, fmax=
 
     """
     # Set the default hop, if it's not already specified
-    if hop_length is None:
-        hop_length = int(n_fft // 4)
-
-    (sig, rate) = librosa.load(f, sr=None)
-    melspec = librosa.feature.melspectrogram(sig, n_fft=2048, n_mels=n_mels, hop_length=hop_length, 
-                                             fmin=fmin, fmax=fmax, sr=rate)
-    logmel = librosa.core.power_to_db(melspec)
-    t_total = sig.size/rate
     
-    
-    split_num = (t_total / 0.5)
+    logmel, t, f = logmel_wav(f, n_fft, n_mels, hop_length, fmin, fmax)
+    split_num = (t.max() / 0.5)
     split = np.array_split(logmel, split_num, axis=1)
-    t = np.linspace(0, (sig.size/rate), logmel.shape[1])
-    t = np.array_split(t, split_num)
-    
-    f = librosa.core.mel_frequencies(n_mels=n_mels, fmin=fmin, fmax=fmax)
-    return rate, split, t, f
+
+    return split, t, f
     
 def closest_argmin(A, B):
     """
@@ -95,7 +134,8 @@ def closest_argmin(A, B):
     return ind_list
 
 
-def split_save(txt, window=256, n_fft=2048, n_mels=256, hop_length=None, fmin=10000, fmax=150000):
+def split_pulse(txt, window=256, n_fft=2048, n_mels=256, hop_length=None, 
+                fmin=10000, fmax=150000):
     """
     Split wav at time points defined in associated txt file. Split data is
     the melspectogram across the window of interest.
@@ -131,22 +171,15 @@ def split_save(txt, window=256, n_fft=2048, n_mels=256, hop_length=None, fmin=10
         Frequencies associated with the n_mel frequency bands
 
     """
-    # Set the default hop, if it's not already specified
-    if hop_length is None:
-        hop_length = int(n_fft // 4)
-        
-    # species = os.path.splitext(txt)[0].rsplit('-', 1)[1]
+       
     wav = f"{os.path.splitext(txt)[0].rsplit('-', 1)[0]}.wav"
 
     (sig, rate) = librosa.load(wav, sr=None)
     melspec = librosa.feature.melspectrogram(sig, n_fft=2048, n_mels=n_mels, hop_length=hop_length, 
                                              fmin=fmin, fmax=fmax, sr=rate)
     logmel = librosa.core.power_to_db(melspec)
-    # print(logmel.shape)
     t = np.linspace(0, (sig.size/rate), logmel.shape[1])
     freq = librosa.core.mel_frequencies(n_mels=n_mels, fmin=fmin, fmax=fmax)
-    
-    # txt = f'{os.path.splitext(f)[0]}-{species.upper()}.txt'
 
     try:
         t_pulse = np.loadtxt(txt)
@@ -192,7 +225,6 @@ def txt_list(path):
     counts = []
     min_space = []
     species_labels = []
-    # r=root, d=directories, f = files
     for r, d, f in os.walk(path):
         for file in f:
             if '.txt' in file and os.path.splitext(file)[0].split('-')[-1].upper() in species_list:
@@ -210,7 +242,7 @@ def txt_list(path):
     return files, species_labels, counts, min_space
 
 
-def split_save_path(path):
+def split_pulse_bulk(path):
     """
     Walks through directory, finds all text files associated with pulse marked 
     wav files, locates pulses and extracts logmel spectograms (256 x 256) for
@@ -233,7 +265,7 @@ def split_save_path(path):
     data = []
     sp_all = []
     for f, sp in zip(files, species_labels):
-        X = split_save(f)
+        X = split_pulse(f)
         if X != None:
             sp_all.append(X[0].shape[0] * [sp,])
             data.append(X[0])
