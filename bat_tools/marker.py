@@ -10,17 +10,14 @@ import numpy as np
 parser = ArgumentParser()
 
 
-parser.add_argument("-f", "--fpath", dest="fpath",
+parser.add_argument("-f", dest="fpath",
                     help="Path to csv with file list", type=str)
 
-parser.add_argument("--species", dest="species",
+parser.add_argument("-s", dest="species",
                     help="Species", type=str)
 
-parser.add_argument("-o", "--overwrite", dest="overwrite",
-                    help="Overwrite", type=bool, default=False)
-
-parser.add_argument("-n", "--nfft", dest="n_fft",
-                    help="Number of fft (default 1024)", type=int, 
+parser.add_argument("-n", dest="n_fft",
+                    help="Number of fft (default 1024)", type=int,
                     default=1024)
 
 parser.add_argument("--ymin", dest="ymin",
@@ -29,11 +26,14 @@ parser.add_argument("--ymin", dest="ymin",
 
 parser.add_argument("--ymax", dest="ymax",
                     help="ymax (default 150)", type=int,
-                    default=10)
+                    default=150)
 
-parser.add_argument("-s", "--save", dest="save",
-                    help="Save text file with list of pulse positions (default True)", 
-                    type=bool, default=True)
+parser.add_argument("--overwrite", dest="overwrite", action='store_true',
+                    help="Analyse previously marked datafiles", type=bool, default=False)
+
+parser.add_argument('--no-save', dest='save', default=True, action='store_false',
+                    help="Do not save text file with list of pulse positions")
+
 
 args = parser.parse_args()
 
