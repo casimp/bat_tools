@@ -37,8 +37,6 @@ def logmel_wav(f, n_fft=2048, n_mels=256, hop_length=None,
 
     Returns
     -------
-    rate: int
-        Sampling rate
     split: array
         Array containing all n logmel spectograms for all pulses in specified 
         file, of size (n , window, n_mels)
@@ -46,7 +44,8 @@ def logmel_wav(f, n_fft=2048, n_mels=256, hop_length=None,
         Time vector across each windows for each split
     freq: array
         Frequencies associated with the n_mel frequency bands
-
+    rate: int
+        Sampling rate
     """
     (sig, rate) = librosa.load(f, sr=None)
     melspec = librosa.feature.melspectrogram(sig, n_fft=2048, n_mels=n_mels, 
@@ -59,7 +58,7 @@ def logmel_wav(f, n_fft=2048, n_mels=256, hop_length=None,
     t_total = sig.size/rate
     t = np.linspace(0, t_total, logmel.shape[1])
     
-    return logmel, t, f
+    return logmel, t, f, rate
     
 
 def split_wav(f, n_fft=2048, n_mels=256, hop_length=None, 
@@ -98,13 +97,12 @@ def split_wav(f, n_fft=2048, n_mels=256, hop_length=None,
         Frequencies associated with the n_mel frequency bands
 
     """
-    # Set the default hop, if it's not already specified
-    
-    logmel, t, f = logmel_wav(f, n_fft, n_mels, hop_length, fmin, fmax)
+   
+    logmel, t, f, rate = logmel_wav(f, n_fft, n_mels, hop_length, fmin, fmax)
     split_num = (t.max() / 0.5)
     split = np.array_split(logmel, split_num, axis=1)
 
-    return split, t, f
+    return split, t, f, rate
     
 def closest_argmin(A, B):
     """
@@ -225,7 +223,7 @@ def txt_list(path):
     counts = []
     min_space = []
     species_labels = []
-    for r, d, f in os.walk(path):
+    for r, _, f in os.walk(path):
         for file in f:
             if '.txt' in file and os.path.splitext(file)[0].split('-')[-1].upper() in species_list:
                 fpath = os.path.join(r, file)
@@ -261,7 +259,7 @@ def split_pulse_bulk(path):
     sp_all: array
         List of species associated with the dataset d, of size (n,)
     """
-    files, species_labels, counts, min_space = txt_list(path)
+    files, species_labels, _, _ = txt_list(path)
     data = []
     sp_all = []
     for f, sp in zip(files, species_labels):
