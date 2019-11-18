@@ -14,8 +14,8 @@ class PulseMark():
     def __init__(self, files, species, overwrite=False):
         self.d = {}
         self.files = files
-        species_list = ['pipi', 'pypi', 'myo', 'plau', 'nyle', 'nyno', 'epse',
-                        'rhhi', 'rhfe', 'baba', 'pina']
+        species_list = ['pipi', 'pipy', 'myo', 'plau', 'nyle', 'nyno', 'epse',
+                        'rhhi', 'rhfe', 'baba', 'pina', 'back']
 
         assert species.lower() in species_list, f'Choose valid species from {species_list}'
         self.species = species
@@ -107,6 +107,7 @@ class PulseMark():
                     self.curr_pos = 0
                     self.curr_bool = True
                     self.split, self.t, freq, rate = split_wav(files[self.curr_file], n_fft=n_fft)
+                    
                     self.n_split = len(self.split)
 
                 ax.cla()
@@ -138,7 +139,9 @@ class PulseMark():
             
         # Now all the event handlers are ready, lets fire up some data
         print(f'Example file: {self.files[0]}')
-        self.split, self.t, freq, rate = split_wav(self.files[0], n_fft=n_fft, hop_length=None)
+        self.split, self.t, freq, rate = split_wav(self.files[0], n_fft=n_fft)
+        print(freq[0], freq[-1])
+        #print(self.t.shape, freq.shape, rate)
         self.n_split = len(self.split)
         self.curr_bool = True
         fig, ax = plt.subplots()
@@ -148,7 +151,7 @@ class PulseMark():
         fig.canvas.mpl_connect('button_press_event', complex_click)
         fig.canvas.mpl_connect('key_press_event', ke)
         fig.canvas.mpl_connect('close_event', handle_close)
-
+        print(freq[0], freq[-1])
         ax.pcolorfast([self.t[0][0], self.t[0][-1]], [freq[0], freq[-1]], self.split[0], cmap=cmap) 
         ax.text(0.9, 0.9,'{}/{}'.format(self.curr_pos+1, len(self.split)), ha='center',
                 va='center', transform=ax.transAxes,

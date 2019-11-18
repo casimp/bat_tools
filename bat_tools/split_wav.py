@@ -30,9 +30,9 @@ def logmel_wav(f, n_fft=2048, n_mels=256, hop_length=None,
     hop_length: int/None
         Number of samples between successive frames.
     fmin: int
-        Minimum frequency for mel bins
+        Minimum frequency for mel bins (Hz)
     fmax: int
-        Maximum frequency for mel bins
+        Maximum frequency for mel bins (Hz)
     
 
     Returns
@@ -79,15 +79,13 @@ def split_wav(f, n_fft=2048, n_mels=256, hop_length=None,
     hop_length: int/None
         Number of samples between successive frames.
     fmin: int
-        Minimum frequency for mel bins
+        Minimum frequency for mel bins (kHz)
     fmax: int
-        Maximum frequency for mel bins
+        Maximum frequency for mel bins (kHz)
     
 
     Returns
     -------
-    rate: int
-        Sampling rate
     split: array
         Array containing all n logmel spectograms for all pulses in specified 
         file, of size (n , window, n_mels)
@@ -95,12 +93,14 @@ def split_wav(f, n_fft=2048, n_mels=256, hop_length=None,
         Time vector across each windows for each split
     freq: array
         Frequencies associated with the n_mel frequency bands
+    rate: int
+        Sampling rate
 
     """
-   
     logmel, t, f, rate = logmel_wav(f, n_fft, n_mels, hop_length, fmin, fmax)
     split_num = (t.max() / 0.5)
     split = np.array_split(logmel, split_num, axis=1)
+    t = np.array_split(t, split_num)
 
     return split, t, f, rate
     
@@ -133,7 +133,7 @@ def closest_argmin(A, B):
 
 
 def split_pulse(txt, window=256, n_fft=2048, n_mels=256, hop_length=None, 
-                fmin=10000, fmax=150000):
+                fmin=10000, fmax=150000, augment=False, width_shift_range=[-20,20]):
     """
     Split wav at time points defined in associated txt file. Split data is
     the melspectogram across the window of interest.
@@ -153,9 +153,9 @@ def split_pulse(txt, window=256, n_fft=2048, n_mels=256, hop_length=None,
     hop_length: int/None
         Number of samples between successive frames.
     fmin: int
-        Minimum frequency for mel bins
+        Minimum frequency for mel bins (kHz)
     fmax: int
-        Maximum frequency for mel bins
+        Maximum frequency for mel bins (kHz)
     
 
     Returns
@@ -169,7 +169,6 @@ def split_pulse(txt, window=256, n_fft=2048, n_mels=256, hop_length=None,
         Frequencies associated with the n_mel frequency bands
 
     """
-       
     wav = f"{os.path.splitext(txt)[0].rsplit('-', 1)[0]}.wav"
 
     (sig, rate) = librosa.load(wav, sr=None)
@@ -183,10 +182,12 @@ def split_pulse(txt, window=256, n_fft=2048, n_mels=256, hop_length=None,
         t_pulse = np.loadtxt(txt)
         assert t_pulse != np.array([]), 'Zero array'
         indexes = closest_argmin(t_pulse, t)
+        if augment:
+            indexes = np.hstack([indexes, indexes + width_shift_range[0], indexes + width_shift_range[1]])
         window = np.arange(-window//2, window//2)
         split_range = np.repeat(window[None, :], indexes.size, axis=0) + indexes[:, None]
         split_range = split_range[~np.any(split_range < 0, axis=1)]
-        split_range = split_range[~np.any(split_range > logmel.shape[1], axis=1)]
+        split_range = split_range[~np.any(split_range > logmel.shape[1]-1, axis=1)]
 
         split = logmel[:, split_range]
         t_split = t[split_range]
@@ -240,7 +241,7 @@ def txt_list(path):
     return files, species_labels, counts, min_space
 
 
-def split_pulse_bulk(path):
+def split_pulse_bulk(path, augment=False, width_shift_range=[-20,20]):
     """
     Walks through directory, finds all text files associated with pulse marked 
     wav files, locates pulses and extracts logmel spectograms (256 x 256) for
@@ -263,7 +264,7 @@ def split_pulse_bulk(path):
     data = []
     sp_all = []
     for f, sp in zip(files, species_labels):
-        X = split_pulse(f)
+        X = split_pulse(f, augment=augment, width_shift_range=width_shift_range)
         if X != None:
             sp_all.append(X[0].shape[0] * [sp,])
             data.append(X[0])

@@ -29,7 +29,7 @@ parser.add_argument("--ymax", dest="ymax",
                     default=150)
 
 parser.add_argument("--overwrite", dest="overwrite", action='store_true',
-                    help="Analyse previously marked datafiles", type=bool, default=False)
+                    help="Analyse previously marked datafiles", default=False)
 
 parser.add_argument('--no-save', dest='save', default=True, action='store_false',
                     help="Do not save text file with list of pulse positions")
