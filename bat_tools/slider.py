@@ -1,12 +1,13 @@
 import numpy as np
-import librosa
 import os
 import itertools
 
 from bat_tools.split_wav import logmel_wav
 
-species_list = ['PIPI', 'NYNO', 'MYO', 'RHHI', 'EPSE', 'PYPI', 'BABA', 'PLAU',
-                'NYLE', 'RHFE', 'PINA'] ## add the rest
+species_list = ['PIPI', 'PIPY', 'PINA', 
+                'NYNO', 'NYLE', 'EPSE', 
+                'MYO', 'BABA', 'PLAU',
+                'RHHI', 'RHFE']
 
 
 def slider(f, step=64, window_width=256, n_fft=2048, n_mels=256, 

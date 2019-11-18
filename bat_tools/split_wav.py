@@ -5,12 +5,13 @@ Created on Fri Oct 18 13:28:08 2019
 @author: casim
 """
 import numpy as np
-import librosa
 import os
 import itertools
 
-species_list = ['PIPI', 'NYNO', 'MYO', 'RHHI', 'EPSE', 'PYPI', 'BABA', 'PLAU',
-                'NYLE', 'RHFE', 'PINA'] ## add the rest
+species_list = ['PIPI', 'PIPY', 'PINA', 
+                'NYNO', 'NYLE', 'EPSE', 
+                'MYO', 'BABA', 'PLAU',
+                'RHHI', 'RHFE'] 
 
 def logmel_wav(f, n_fft=2048, n_mels=256, hop_length=None, 
               fmin=10000, fmax=150000):

@@ -14,10 +14,12 @@ class PulseMark():
     def __init__(self, files, species, overwrite=False):
         self.d = {}
         self.files = files
-        species_list = ['pipi', 'pipy', 'myo', 'plau', 'nyle', 'nyno', 'epse',
-                        'rhhi', 'rhfe', 'baba', 'pina', 'back']
+        species_list = ['PIPI', 'PIPY', 'PINA', 
+                        'NYNO', 'NYLE', 'EPSE', 
+                        'MYO', 'BABA', 'PLAU',
+                        'RHHI', 'RHFE'] 
 
-        assert species.lower() in species_list, f'Choose valid species from {species_list}'
+        assert species.upper() in species_list, f'Choose valid species from {species_list}'
         self.species = species
         self.curr_pos = 0
         self.curr_file = 0
