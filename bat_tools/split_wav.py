@@ -7,6 +7,7 @@ Created on Fri Oct 18 13:28:08 2019
 import numpy as np
 import os
 import itertools
+import librosa
 
 species_list = ['PIPI', 'PIPY', 'PINA', 
                 'NYNO', 'NYLE', 'EPSE', 

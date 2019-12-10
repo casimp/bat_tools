@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from bat_tools.split_wav import split_wav
 import os
 import numpy as np
+import librosa
 
 class PulseMark():
 
